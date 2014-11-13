@@ -17,13 +17,14 @@ namespace CallFsEB
             0x9C,       // pushfq
 
             // save registers
-            0x50,       // push rax
-            0x51,       // push rcx
-            0x52,       // push rdx
-            0x53,       // push rbx
-            0x55,       // push rbp
-            0x56,       // push rsi
-            0x57,       // push rdi
+            0x40, 0x50, // push rax
+            0x40, 0x51, // push rcx
+            0x40, 0x52, // push rdx
+            0x40, 0x53, // push rbx
+            0x40, 0x54, // push rsp <>
+            0x40, 0x55, // push rbp
+            0x40, 0x56, // push rsi
+            0x40, 0x57, // push rdi
             0x41, 0x50, // push r8
             0x41, 0x51, // push r9
             0x41, 0x52, // push r10
@@ -44,13 +45,14 @@ namespace CallFsEB
             0x41, 0x5A, // pop r10
             0x41, 0x59, // pop r9
             0x41, 0x58, // pop r8
-            0x5F,       // pop rdi
-            0x5E,       // pop rsi
-            0x5D,       // pop rbp
-            0x5B,       // pop rbx
-            0x5A,       // pop rdx
-            0x59,       // pop rcx
-            0x58,       // pop rax
+            0x40, 0x5F, // pop rdi
+            0x40, 0x5E, // pop rsi
+            0x40, 0x5D, // pop rbp
+            0x40, 0x5C, // pop rsp <>
+            0x40, 0x5B, // pop rbx
+            0x40, 0x5A, // pop rdx
+            0x40, 0x59, // pop rcx
+            0x40, 0x58, // pop rax
 
             // restore flags
             0x9D,       // popfq
@@ -73,7 +75,6 @@ namespace CallFsEB
         [DllImport("kernel32", SetLastError = true)]
         private static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesRead);
         [DllImport("kernel32", SetLastError = true)]
-        //[return: MarshalAs(UnmanagedType.Bool)]
         public static extern uint SuspendThread(IntPtr thandle);
         [DllImport("kernel32", SetLastError = true)]
         public static extern uint ResumeThread(IntPtr thandle);
@@ -87,7 +88,10 @@ namespace CallFsEB
         [DllImport("kernel32", SetLastError = true)]
         static extern bool FlushInstructionCache(IntPtr hProcess, IntPtr lpBaseAddress, IntPtr dwSize);
 
-
+        [DllImport("ntdll.dll", SetLastError = true)]
+        static extern IntPtr NtSuspendProcess(IntPtr ProcessHandle);
+        [DllImport("ntdll.dll", SetLastError = true)]
+        static extern IntPtr NtResumeProcess(IntPtr ProcessHandle);
 
         #endregion
 
@@ -301,13 +305,17 @@ namespace CallFsEB
         public unsafe void Call(IntPtr injAddress, IntPtr funcAddress, params long[] funcArgs)
         {
             var tHandle = OpenThread(ThreadAccess.All, false, this.Process.Threads[0].Id);
-            if (SuspendThread(tHandle) == 0xFFFFFFFF)
+
+            //if (SuspendThread(tHandle) == 0xFFFFFFFF)
+            //    throw new Win32Exception();
+
+            if (NtSuspendProcess(this.Process.Handle) != IntPtr.Zero)
                 throw new Win32Exception();
 
             // don't use new CONTEXT
             // because __declspec(align(16)) _CONTEXT
             var context = (CONTEXT*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CONTEXT)));
-            context->ContextFlags = 0x100001u; // CONTROL
+            context->ContextFlags = 0x100001u; // CONTEXT_CONTROL
             //context->Rip = 0UL;
 
             if (!GetThreadContext(tHandle, context))
@@ -318,7 +326,7 @@ namespace CallFsEB
 
             #region ASM
 
-            var minStackSize = 4 * IntPtr.Size;
+            var minStackSize = 0x28;
             var reservStack  = (byte)Math.Max(funcArgs.Length * IntPtr.Size, minStackSize);
 
             // save flags and registers
@@ -328,6 +336,8 @@ namespace CallFsEB
 
             // sub rsp, reservStack
             bytes.AddRange(new byte[] { 0x48, 0x83, 0xEC, reservStack });
+
+            #region Function arguments
 
             // 4 first argument of the function is stored in the registers
             if (funcArgs.Length > 0)
@@ -372,6 +382,8 @@ namespace CallFsEB
                 displacement += (byte)IntPtr.Size;
             }
 
+            #endregion
+
             // mov rax, funcPtr
             bytes.AddRange(new byte[] { 0x48, 0xB8 });
             bytes.AddRange(BitConverter.GetBytes(funcAddress.ToInt64()));
@@ -391,13 +403,22 @@ namespace CallFsEB
             //restore registers and flags
             bytes.AddRange(popafq);
 
+            #region push rip
+
+            Console.WriteLine("Rip: 0x{0:X16}", context->Rip);
+            var lorip = (uint)((context->Rip >> 00) & 0xFFFFFFFF);
+            var hirip = (uint)((context->Rip >> 32) & 0xFFFFFFFF);
+
             // push to stack next instruction address
             bytes.Add(0x68); // push lo
-            bytes.AddRange(BitConverter.GetBytes((uint)(context->Rip & 0xFFFFFFFF)));
+            bytes.AddRange(BitConverter.GetBytes(lorip));
             
             // mov [rsp+4], hi
-            bytes.AddRange(new byte[] { 0xC7, 0x44, 0x24, 0x04 }); 
-            bytes.AddRange(BitConverter.GetBytes((uint)((context->Rip >> 32) & 0xFFFFFFFF)));
+            bytes.AddRange(new byte[] { 0xC7, 0x44, 0x24, 0x04 });
+            bytes.AddRange(BitConverter.GetBytes(hirip));
+
+            #endregion
+
             // retn
             bytes.Add(0xC3);
 
@@ -421,8 +442,11 @@ namespace CallFsEB
             if (!SetThreadContext(tHandle, context))
                 throw new Win32Exception();
 
-            if (ResumeThread(tHandle) == 0xFFFFFFFF)
+            if (NtResumeProcess(this.Process.Handle) != IntPtr.Zero)
                 throw new Win32Exception();
+
+            //if (ResumeThread(tHandle) == 0xFFFFFFFF)
+            //    throw new Win32Exception();
 
             for (int i = 0; i < 0x100; ++i)
             {
@@ -550,6 +574,25 @@ namespace CallFsEB
         /// </summary>
         [FieldOffset(0xF8)]
         public ulong Rip;
+    };
+
+    /// <summary>
+    /// Contains processor-specific register data.
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit, Size = 716)]
+    public struct WOW64_CONTEXT
+    {
+        /// <summary>
+        /// Context flag.
+        /// </summary>
+        [FieldOffset(0x00)]
+        public uint ContextFlags;
+
+        /// <summary>
+        /// Next instruction pointer.
+        /// </summary>
+        [FieldOffset(0xB8)]
+        public uint Eip;
     };
 
     #endregion

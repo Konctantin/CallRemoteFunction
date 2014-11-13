@@ -39,6 +39,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     printf("context: 0x%X, ContextFlags: 0x%X, Rip: 0x%X\n\n\n", ptr, cf, rip);
     printf("context: 0x%X, ContextFlags: +0x%X, Rip: +0x%X\n\n\n", ptr, (DWORD64)cf - (DWORD64)ptr, (DWORD64)rip - (DWORD64)ptr);
+
+
     FlushInstructionCache(0, 0, 0);
 
     CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&MainLoop, NULL, 0, NULL);
@@ -71,6 +73,7 @@ DWORD MainLoop()
 
         if (i > 10000000)
         {
+            WOW64_CONTEXT ctx64;
             CONTEXT ctx;
             ctx.ContextFlags = 0x100001;
             ctx.Rip = 0xFFAADD;

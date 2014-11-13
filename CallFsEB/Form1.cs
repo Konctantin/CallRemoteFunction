@@ -14,7 +14,8 @@ namespace CallFsEB
         [DllImport("kernel32", SetLastError = true)]
         static extern bool VirtualProtectEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, MemoryProtection flNewProtect, out MemoryProtection lpflOldProtect);
 
-        const int offset_def = /*0x1230*/0x11D0;
+        const int offset_def7 = 0x1230; // 7 args
+        const int offset_def3 = 0x11D0; // 3 args
 
         delegate long Run();
 
@@ -103,21 +104,27 @@ namespace CallFsEB
             var path = memory.WriteCString(tbPath.Text);
             var code = memory.Alloc(0x100);
 
-            Console.WriteLine("Code [alloc]: 0x{0:X}", code);
+            Console.WriteLine("Code [alloc]: 0x{0:X16}", code);
 
             try
             {
                 var build = process.MainModule.FileVersionInfo.FilePrivatePart;
-                long func = offset_def;
+                long func = offset_def3;
 
                 // Если это не тестовое приложение
                 if (build != 0)
                 {
+                    Console.WriteLine("Build: " + build);
                     var a = tbFuncAddress.Text.Substring(2);
                     func = long.Parse(a, NumberStyles.AllowHexSpecifier);
                 }
+                else
+                {
+                    memory.Call(code, memory.Rebase(offset_def7), src.ToInt64(), path.ToInt64(), 0, 4, 5, 0xffddaaeeffaa, 7);
+                }
 
-                Console.WriteLine("Func address [no rebase]: 0x{0:X}", func);
+                Console.WriteLine("Func address [no rebase]: 0x{0:X16}", func);
+                Console.WriteLine("Base addr: 0x{0:X16}", memory.Process.MainModule.BaseAddress.ToInt64());
 
                 memory.Call(code, memory.Rebase(func), src.ToInt64(), path.ToInt64(), 0);
 
