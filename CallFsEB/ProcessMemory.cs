@@ -326,7 +326,7 @@ namespace CallFsEB
 
             #region ASM
 
-            var minStackSize = 0x28;
+            var minStackSize = 0x20;
             var reservStack  = (byte)Math.Max(funcArgs.Length * IntPtr.Size, minStackSize);
 
             // save flags and registers
@@ -448,28 +448,148 @@ namespace CallFsEB
             //if (ResumeThread(tHandle) == 0xFFFFFFFF)
             //    throw new Win32Exception();
 
-            for (int i = 0; i < 0x100; ++i)
-            {
-                System.Threading.Thread.Sleep(15);
-                if (this.Read<uint>(checkAddr) == 0xDEADBEEF)
-                {
-                    Debug.WriteLine("iter: " + i);
-                    break;
-                }
-            }
+            //for (int i = 0; i < 0x100; ++i)
+            //{
+            //    System.Threading.Thread.Sleep(15);
+            //    if (this.Read<uint>(checkAddr) == 0xDEADBEEF)
+            //    {
+            //        Debug.WriteLine("iter: " + i);
+            //        break;
+            //    }
+            //}
 
-            Marshal.FreeHGlobal((IntPtr)context);
-            this.Free(checkAddr);
+            //Marshal.FreeHGlobal((IntPtr)context);
+            //this.Free(checkAddr);
 
             // original code
-            this.Write(injAddress, oldCode);
+            //this.Write(injAddress, oldCode);
 
-            if (!FlushInstructionCache(this.Process.Handle, injAddress, (IntPtr)oldCode.Length))
-                throw new Win32Exception();
+            //if (!FlushInstructionCache(this.Process.Handle, injAddress, (IntPtr)oldCode.Length))
+            //    throw new Win32Exception();
 
             // restore protection
-            if (!VirtualProtectEx(this.Process.Handle, injAddress, bytes.Count, oldProtect, out oldProtect))
+            //if (!VirtualProtectEx(this.Process.Handle, injAddress, bytes.Count, oldProtect, out oldProtect))
+            //    throw new Win32Exception();
+        }
+
+        public unsafe void CallFrameScriptExec(IntPtr injAddress, IntPtr funcAddress, string code)
+        {
+            var tHandle = OpenThread(ThreadAccess.All, false, this.Process.Threads[0].Id);
+
+            var srcAddr = WriteCString(code).ToInt64();
+
+            if (NtSuspendProcess(this.Process.Handle) != IntPtr.Zero)
                 throw new Win32Exception();
+            var context = (CONTEXT*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CONTEXT)));
+            context->ContextFlags = 0x100001u; // CONTEXT_CONTROL
+
+            if (!GetThreadContext(tHandle, context))
+                throw new Win32Exception();
+
+            var bytes = new List<byte>();
+
+            #region ASM
+
+            byte stackSize = 0x28;
+
+            // save flags and registers
+            bytes.AddRange(pushafq);
+
+            // code
+
+            /*
+             mov rax, src                           ; 0x48, 0xB8, addr
+             mov rdx, rax                           ; 0x48, 0x89, 0xC2
+             mov rcx, rax                           ; 0x48, 0x89, 0xC1
+             xor r8, r8                             ; 0x4D, 0x31, 0xC0
+             mov rax, FrameScript::ExecuteBuffer    ; 0x48, 0xB8, addr
+             call rax                               ; 0xFF, 0xD0
+             */
+
+            // sub rsp, reservStack
+            bytes.AddRange(new byte[] { 0x48, 0x83, 0xEC, stackSize });
+
+            // mov rax, src
+            bytes.AddRange(new byte[] { 0x48, 0xB8 });
+            bytes.AddRange(BitConverter.GetBytes(srcAddr));
+
+            // mov rdx, rax
+            bytes.AddRange(new byte[] { 0x48, 0x89, 0xC2 });
+            // mov rcx, rax
+            bytes.AddRange(new byte[] { 0x48, 0x89, 0xC1 });
+            // xor r8, r8
+            bytes.AddRange(new byte[] { 0x4D, 0x31, 0xC0 });
+
+            // mov rax, funcPtr
+            bytes.AddRange(new byte[] { 0x48, 0xB8 });
+            bytes.AddRange(BitConverter.GetBytes(funcAddress.ToInt64()));
+            // call rax
+            bytes.AddRange(new byte[] { 0xFF, 0xD0 });
+
+
+            // add rsp, reservStack
+            bytes.AddRange(new byte[] { 0x48, 0x83, 0xC4, stackSize });
+
+            //restore registers and flags
+            bytes.AddRange(popafq);
+
+            #region push rip
+
+            Console.WriteLine("Rip: 0x{0:X16}", context->Rip);
+            var lorip = (uint)((context->Rip >> 00) & 0xFFFFFFFF);
+            var hirip = (uint)((context->Rip >> 32) & 0xFFFFFFFF);
+
+            // push to stack next instruction address
+            bytes.Add(0x68); // push lo
+            bytes.AddRange(BitConverter.GetBytes(lorip));
+
+            // mov [rsp+4], hi
+            bytes.AddRange(new byte[] { 0xC7, 0x44, 0x24, 0x04 });
+            bytes.AddRange(BitConverter.GetBytes(hirip));
+
+            #endregion
+
+            // retn
+            bytes.Add(0xC3);
+
+            #endregion
+
+            // Save original code and disable protect
+            var oldCode = this.ReadBytes(injAddress, bytes.Count);
+
+            var oldProtect = MemoryProtection.ReadOnly;
+            if (!VirtualProtectEx(this.Process.Handle, injAddress, bytes.Count, MemoryProtection.ExecuteReadWrite, out oldProtect))
+                throw new Win32Exception();
+
+            Debug.WriteLine("Shell code size: {0}", bytes.Count);
+
+            // write shell code
+            this.Write(injAddress, bytes.ToArray());
+
+            // set next instruction pointer
+            context->Rip = (ulong)injAddress.ToInt64();
+
+            if (!SetThreadContext(tHandle, context))
+                throw new Win32Exception();
+
+            if (NtResumeProcess(this.Process.Handle) != IntPtr.Zero)
+                throw new Win32Exception();
+
+            //if (ResumeThread(tHandle) == 0xFFFFFFFF)
+            //    throw new Win32Exception();
+
+            //Marshal.FreeHGlobal((IntPtr)context);
+            //this.Free(checkAddr);
+
+            // original code
+            //this.Write(injAddress, oldCode);
+
+            //if (!FlushInstructionCache(this.Process.Handle, injAddress, (IntPtr)oldCode.Length))
+            //    throw new Win32Exception();
+
+            // restore protection
+            //if (!VirtualProtectEx(this.Process.Handle, injAddress, bytes.Count, oldProtect, out oldProtect))
+            //    throw new Win32Exception();
         }
 
         /// <summary>

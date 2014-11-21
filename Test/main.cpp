@@ -1,9 +1,36 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <Windows.h>
+#include <setjmp.h>
+
+
+void PrintContextFieldInfo()
+{
+    CONTEXT context;
+    context.ContextFlags = 0xff;
+    context.Rip = 0xFFEEDDCCBBAA2211;
+
+    printf("Info of structure 'CONTEXT' for x64 mode\n");
+    printf(" * Size: %i\n", sizeof(CONTEXT));
+    printf(" * ContextFlag offset: +0x%X\n", (DWORD64)&context.ContextFlags - (DWORD64)&context);
+    printf(" * Rip offset: +0x%X\n",         (DWORD64)&context.Rip - (DWORD64)&context);
+    printf("\n\n");
+
+    WOW64_CONTEXT context32;
+    context32.ContextFlags = 0xff;
+    context32.Eip = 0xDEADBEEF;
+
+    printf("Info of structure 'CONTEXT' for x32 mode\n");
+    printf(" * Size: %i\n", sizeof(WOW64_CONTEXT));
+    printf(" * ContextFlag offset: +0x%X\n", (DWORD64)&context32.ContextFlags - (DWORD64)&context32);
+    printf(" * Eip offset: +0x%X\n",         (DWORD64)&context32.Eip - (DWORD64)&context32);
+    printf("\n\n");
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+    PrintContextFieldInfo();
+
     unsigned char remoteCallEntryBase[256] =
     {
         0x40, 0x57,                                                 /*push rdi*/
@@ -26,4 +53,3 @@ int _tmain(int argc, _TCHAR* argv[])
     system("pause");
     return 0;
 }
-

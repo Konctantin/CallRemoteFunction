@@ -19,6 +19,11 @@ namespace CallFsEB
 
         delegate long Run();
 
+        private long FuncOffset
+        {
+            get { return long.Parse(tbFuncAddress.Text.Substring(2), NumberStyles.AllowHexSpecifier); }
+        }
+
         unsafe void Calc()
         {
             var t = 0xAADDFFEECCAAFFL;
@@ -91,53 +96,68 @@ namespace CallFsEB
 
         private void bInject_Click(object sender, EventArgs e)
         {
-            if (cbProcess.SelectedIndex == -1)
-                return;
-
+            if (cbProcess.SelectedIndex == -1) return;
             Console.Clear();
-
-            var process = ((ProcessEntry)cbProcess.SelectedItem).Process;
-            var memory  = new ProcessMemory(process);
-
-
-            var src  = memory.WriteCString(tbCode.Text);
-            var path = memory.WriteCString(tbPath.Text);
-            var code = memory.Alloc(0x100);
-
-            Console.WriteLine("Code [alloc]: 0x{0:X16}", code);
 
             try
             {
+                var process = ((ProcessEntry)cbProcess.SelectedItem).Process;
+                var memory = new ProcessMemory(process);
+
                 var build = process.MainModule.FileVersionInfo.FilePrivatePart;
-                long func = offset_def3;
+                var func = build == 0 ? offset_def3 : this.FuncOffset;
 
-                // Если это не тестовое приложение
-                if (build != 0)
-                {
-                    Console.WriteLine("Build: " + build);
-                    var a = tbFuncAddress.Text.Substring(2);
-                    func = long.Parse(a, NumberStyles.AllowHexSpecifier);
-                }
-                else
-                {
-                    memory.Call(code, memory.Rebase(offset_def7), src.ToInt64(), path.ToInt64(), 0, 4, 5, 0xffddaaeeffaa, 7);
-                }
+                var src = memory.WriteCString(tbParam1.Text);
+                var path = memory.WriteCString(tbParam2.Text);
+                var alloc = memory.Alloc(0x1000);
 
+                Console.WriteLine("Build: " + build);
+                Console.WriteLine("Code [alloc]: 0x{0:X16}", alloc);
                 Console.WriteLine("Func address [no rebase]: 0x{0:X16}", func);
                 Console.WriteLine("Base addr: 0x{0:X16}", memory.Process.MainModule.BaseAddress.ToInt64());
 
-                memory.Call(code, memory.Rebase(func), src.ToInt64(), path.ToInt64(), 0);
+                memory.Call(alloc, memory.Rebase(func), src.ToInt64(), path.ToInt64(), 0);
 
+                // не освобождаем дескрипторы, необходимо для отладки процесса.
+                //memory.Free(src);
+                //memory.Free(path);
+                //memory.Free(alloc);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
-            finally
+        }
+
+        private void bHardInject_Click(object sender, EventArgs e)
+        {
+            if (cbProcess.SelectedIndex == -1) return;
+            Console.Clear();
+
+            try
             {
-                memory.Free(src);
-                memory.Free(path);
-                memory.Free(code);
+                var process = ((ProcessEntry)cbProcess.SelectedItem).Process;
+                var memory = new ProcessMemory(process);
+
+                var build = process.MainModule.FileVersionInfo.FilePrivatePart;
+                var func = build == 0 ? offset_def3 : this.FuncOffset;
+
+                var alloc = memory.Alloc(0x1000);
+
+                Console.WriteLine("Build: " + build);
+                Console.WriteLine("Code [alloc]: 0x{0:X16}", alloc);
+                Console.WriteLine("Func address [no rebase]: 0x{0:X16}", func);
+                Console.WriteLine("Base addr: 0x{0:X16}", memory.Process.MainModule.BaseAddress.ToInt64());
+
+
+                memory.CallFrameScriptExec(alloc, memory.Rebase(func), tbParam1.Text);
+
+                // не освобождаем дескрипторы, необходимо для отладки процесса.
+                //memory.Free(alloc);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
     }

@@ -28,75 +28,25 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.bInject = new System.Windows.Forms.Button();
-            this.tbCode = new System.Windows.Forms.TextBox();
-            this.tbPath = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.tbInjectionAddress = new System.Windows.Forms.TextBox();
             this.tbFuncAddress = new System.Windows.Forms.TextBox();
             this.cbProcess = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
             this.tbConsole = new System.Windows.Forms.TextBox();
             this.bRefresh = new System.Windows.Forms.Button();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.tbParam2 = new System.Windows.Forms.TextBox();
+            this.bFlexInject = new System.Windows.Forms.Button();
+            this.tbParam1 = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.bHardInject = new System.Windows.Forms.Button();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // bInject
-            // 
-            this.bInject.Location = new System.Drawing.Point(12, 243);
-            this.bInject.Name = "bInject";
-            this.bInject.Size = new System.Drawing.Size(367, 23);
-            this.bInject.TabIndex = 0;
-            this.bInject.Text = "Inject";
-            this.bInject.UseVisualStyleBackColor = true;
-            this.bInject.Click += new System.EventHandler(this.bInject_Click);
-            // 
-            // tbCode
-            // 
-            this.tbCode.Location = new System.Drawing.Point(12, 134);
-            this.tbCode.Multiline = true;
-            this.tbCode.Name = "tbCode";
-            this.tbCode.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.tbCode.Size = new System.Drawing.Size(367, 103);
-            this.tbCode.TabIndex = 1;
-            this.tbCode.Text = "print(\"Hello wow!\");";
-            // 
-            // tbPath
-            // 
-            this.tbPath.Location = new System.Drawing.Point(12, 108);
-            this.tbPath.Name = "tbPath";
-            this.tbPath.Size = new System.Drawing.Size(367, 20);
-            this.tbPath.TabIndex = 2;
-            this.tbPath.Text = "profile.lua";
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 49);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(93, 13);
-            this.label1.TabIndex = 3;
-            this.label1.Text = "Injection address: ";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 74);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(74, 13);
-            this.label2.TabIndex = 4;
-            this.label2.Text = "Func address:";
-            // 
-            // tbInjectionAddress
-            // 
-            this.tbInjectionAddress.Location = new System.Drawing.Point(126, 46);
-            this.tbInjectionAddress.Name = "tbInjectionAddress";
-            this.tbInjectionAddress.Size = new System.Drawing.Size(253, 20);
-            this.tbInjectionAddress.TabIndex = 5;
             // 
             // tbFuncAddress
             // 
-            this.tbFuncAddress.Location = new System.Drawing.Point(126, 71);
+            this.tbFuncAddress.Location = new System.Drawing.Point(89, 39);
             this.tbFuncAddress.Name = "tbFuncAddress";
             this.tbFuncAddress.Size = new System.Drawing.Size(253, 20);
             this.tbFuncAddress.TabIndex = 6;
@@ -107,7 +57,7 @@
             this.cbProcess.DisplayMember = "Name";
             this.cbProcess.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbProcess.FormattingEnabled = true;
-            this.cbProcess.Location = new System.Drawing.Point(126, 12);
+            this.cbProcess.Location = new System.Drawing.Point(89, 12);
             this.cbProcess.Name = "cbProcess";
             this.cbProcess.Size = new System.Drawing.Size(221, 21);
             this.cbProcess.TabIndex = 7;
@@ -123,17 +73,20 @@
             // 
             // tbConsole
             // 
+            this.tbConsole.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.tbConsole.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.tbConsole.Location = new System.Drawing.Point(15, 272);
+            this.tbConsole.Location = new System.Drawing.Point(2, 201);
             this.tbConsole.Multiline = true;
             this.tbConsole.Name = "tbConsole";
             this.tbConsole.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.tbConsole.Size = new System.Drawing.Size(367, 170);
+            this.tbConsole.Size = new System.Drawing.Size(354, 202);
             this.tbConsole.TabIndex = 9;
             // 
             // bRefresh
             // 
-            this.bRefresh.Location = new System.Drawing.Point(353, 10);
+            this.bRefresh.Location = new System.Drawing.Point(316, 10);
             this.bRefresh.Name = "bRefresh";
             this.bRefresh.Size = new System.Drawing.Size(28, 23);
             this.bRefresh.TabIndex = 10;
@@ -141,25 +94,101 @@
             this.bRefresh.UseVisualStyleBackColor = true;
             this.bRefresh.Click += new System.EventHandler(this.Form1_Load);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.bHardInject);
+            this.groupBox1.Controls.Add(this.label5);
+            this.groupBox1.Controls.Add(this.label4);
+            this.groupBox1.Controls.Add(this.tbParam1);
+            this.groupBox1.Controls.Add(this.bFlexInject);
+            this.groupBox1.Controls.Add(this.tbParam2);
+            this.groupBox1.Location = new System.Drawing.Point(15, 58);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(327, 137);
+            this.groupBox1.TabIndex = 11;
+            this.groupBox1.TabStop = false;
+            // 
+            // tbParam2
+            // 
+            this.tbParam2.Location = new System.Drawing.Point(58, 45);
+            this.tbParam2.Name = "tbParam2";
+            this.tbParam2.Size = new System.Drawing.Size(263, 20);
+            this.tbParam2.TabIndex = 3;
+            this.tbParam2.Text = "profile.lua";
+            // 
+            // bFlexInject
+            // 
+            this.bFlexInject.Location = new System.Drawing.Point(9, 71);
+            this.bFlexInject.Name = "bFlexInject";
+            this.bFlexInject.Size = new System.Drawing.Size(312, 23);
+            this.bFlexInject.TabIndex = 4;
+            this.bFlexInject.Text = "Flex Inject";
+            this.bFlexInject.UseVisualStyleBackColor = true;
+            this.bFlexInject.Click += new System.EventHandler(this.bInject_Click);
+            // 
+            // tbParam1
+            // 
+            this.tbParam1.Location = new System.Drawing.Point(58, 19);
+            this.tbParam1.Name = "tbParam1";
+            this.tbParam1.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.tbParam1.Size = new System.Drawing.Size(263, 20);
+            this.tbParam1.TabIndex = 5;
+            this.tbParam1.Text = "print(\"Hello wow!\");";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(6, 22);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(46, 13);
+            this.label4.TabIndex = 6;
+            this.label4.Text = "Param1:";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(6, 48);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(46, 13);
+            this.label5.TabIndex = 7;
+            this.label5.Text = "Param2:";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(12, 42);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(74, 13);
+            this.label1.TabIndex = 12;
+            this.label1.Text = "Func address:";
+            // 
+            // bHardInject
+            // 
+            this.bHardInject.Location = new System.Drawing.Point(9, 100);
+            this.bHardInject.Name = "bHardInject";
+            this.bHardInject.Size = new System.Drawing.Size(312, 23);
+            this.bHardInject.TabIndex = 8;
+            this.bHardInject.Text = "Hard Inject";
+            this.bHardInject.UseVisualStyleBackColor = true;
+            this.bHardInject.Click += new System.EventHandler(this.bHardInject_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(391, 454);
+            this.ClientSize = new System.Drawing.Size(357, 403);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.bRefresh);
             this.Controls.Add(this.tbConsole);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.cbProcess);
             this.Controls.Add(this.tbFuncAddress);
-            this.Controls.Add(this.tbInjectionAddress);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.tbPath);
-            this.Controls.Add(this.tbCode);
-            this.Controls.Add(this.bInject);
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -167,17 +196,19 @@
 
         #endregion
 
-        private System.Windows.Forms.Button bInject;
-        private System.Windows.Forms.TextBox tbCode;
-        private System.Windows.Forms.TextBox tbPath;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TextBox tbInjectionAddress;
         private System.Windows.Forms.TextBox tbFuncAddress;
         private System.Windows.Forms.ComboBox cbProcess;
         private System.Windows.Forms.Label label3;
         public System.Windows.Forms.TextBox tbConsole;
         private System.Windows.Forms.Button bRefresh;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button bHardInject;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox tbParam1;
+        private System.Windows.Forms.Button bFlexInject;
+        private System.Windows.Forms.TextBox tbParam2;
+        private System.Windows.Forms.Label label1;
     }
 }
 
