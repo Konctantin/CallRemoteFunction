@@ -316,7 +316,6 @@ namespace CallFsEB
             // because __declspec(align(16)) _CONTEXT
             var context = (CONTEXT*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CONTEXT)));
             context->ContextFlags = 0x100001u; // CONTEXT_CONTROL
-            //context->Rip = 0UL;
 
             if (!GetThreadContext(tHandle, context))
                 throw new Win32Exception();
@@ -326,7 +325,7 @@ namespace CallFsEB
 
             #region ASM
 
-            var minStackSize = 0x20;
+            byte minStackSize = 0x20;
             var reservStack  = (byte)Math.Max(funcArgs.Length * IntPtr.Size, minStackSize);
 
             // save flags and registers
@@ -369,7 +368,7 @@ namespace CallFsEB
             }
 
             // other arguments on the stack
-            byte displacement = 0x20;
+            byte displacement = minStackSize;
             for (int i = 4; i < funcArgs.Length; ++i)
             {
                 // mov rax, param
@@ -379,6 +378,7 @@ namespace CallFsEB
                 // mov qword ptr [rsp+i], rax
                 bytes.AddRange(new byte[] { 0x48, 0x89, 0x44, 0x24, displacement });
 
+                //
                 displacement += (byte)IntPtr.Size;
             }
 
@@ -394,6 +394,7 @@ namespace CallFsEB
             // mov rax, checkAddr
             bytes.AddRange(new byte[] { 0x48, 0xB8 });
             bytes.AddRange(BitConverter.GetBytes(checkAddr.ToInt64()));
+
             // mov dword[rax], 0xDEADBEEF
             bytes.AddRange(new byte[] { 0xC7, 0x00, 0xEF, 0xBE, 0xAD, 0xDE });
 
@@ -406,6 +407,7 @@ namespace CallFsEB
             #region push rip
 
             Console.WriteLine("Rip: 0x{0:X16}", context->Rip);
+
             var lorip = (uint)((context->Rip >> 00) & 0xFFFFFFFF);
             var hirip = (uint)((context->Rip >> 32) & 0xFFFFFFFF);
 
@@ -480,6 +482,7 @@ namespace CallFsEB
 
             if (NtSuspendProcess(this.Process.Handle) != IntPtr.Zero)
                 throw new Win32Exception();
+
             var context = (CONTEXT*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CONTEXT)));
             context->ContextFlags = 0x100001u; // CONTEXT_CONTROL
 
@@ -490,7 +493,7 @@ namespace CallFsEB
 
             #region ASM
 
-            byte stackSize = 0x28;
+            byte stackSize = 0x40;
 
             // save flags and registers
             bytes.AddRange(pushafq);
@@ -498,11 +501,12 @@ namespace CallFsEB
             // code
 
             /*
-             mov rax, src                           ; 0x48, 0xB8, addr
-             mov rdx, rax                           ; 0x48, 0x89, 0xC2
-             mov rcx, rax                           ; 0x48, 0x89, 0xC1
+             mov rax, src                           ; 0x48, 0xB8, src_addr
+             mov [rsp+28h], rax                     ; 0x48, 0x89, 0x44, 0x24, 0x28
+             lea rdx, [rsp+28h]                     ; 0x48, 0x8D, 0x54, 0x24, 0x28
+             lea rcx, [rsp+28h]                     ; 0x48, 0x8D, 0x4C, 0x24, 0x28
              xor r8, r8                             ; 0x4D, 0x31, 0xC0
-             mov rax, FrameScript::ExecuteBuffer    ; 0x48, 0xB8, addr
+             mov rax, FrameScript::ExecuteBuffer    ; 0x48, 0xB8, func_addr
              call rax                               ; 0xFF, 0xD0
              */
 
@@ -512,11 +516,12 @@ namespace CallFsEB
             // mov rax, src
             bytes.AddRange(new byte[] { 0x48, 0xB8 });
             bytes.AddRange(BitConverter.GetBytes(srcAddr));
-
-            // mov rdx, rax
-            bytes.AddRange(new byte[] { 0x48, 0x89, 0xC2 });
-            // mov rcx, rax
-            bytes.AddRange(new byte[] { 0x48, 0x89, 0xC1 });
+            // mov [rsp+28h], rax
+            bytes.AddRange(new byte[] { 0x48, 0x89, 0x44, 0x24, 0x28 });
+            // lea rdx, [rsp+28h]
+            bytes.AddRange(new byte[] { 0x48, 0x8D, 0x54, 0x24, 0x28 });
+            // lea rcx, [rsp+28h]
+            bytes.AddRange(new byte[] { 0x48, 0x8D, 0x4C, 0x24, 0x28 });
             // xor r8, r8
             bytes.AddRange(new byte[] { 0x4D, 0x31, 0xC0 });
 

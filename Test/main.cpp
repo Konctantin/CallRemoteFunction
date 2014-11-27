@@ -2,10 +2,44 @@
 #include <tchar.h>
 #include <Windows.h>
 #include <setjmp.h>
+#include <string>
 
+//#pragma comment(lib, "FASM")
+
+typedef struct FasmLineHeader
+{
+    char * file_path;
+    DWORD line_number;
+    union
+    {
+        DWORD file_offset;
+        DWORD macro_offset_line;
+    };
+    FasmLineHeader * macro_line;
+} FASM_LINE_HEADER;
+
+typedef struct FasmState
+{
+    int condition;
+    union
+    {
+        int error_code;
+        DWORD output_length;
+    };
+    union
+    {
+        BYTE * output_data;
+        FasmLineHeader * error_data;
+    };
+} FASM_STATE;
+
+extern "C" DWORD fasm_GetVersion();
+extern "C" DWORD fasm_AssembleFile(char* szFileName);
+extern "C" DWORD fasm_Assemble(char* szSource, BYTE* lpMemory, int nSize, int nPassesLimit, int hDisplayPipe);
 
 void PrintContextFieldInfo()
 {
+#if !WIN32
     CONTEXT context;
     context.ContextFlags = 0xff;
     context.Rip = 0xFFEEDDCCBBAA2211;
@@ -25,10 +59,26 @@ void PrintContextFieldInfo()
     printf(" * ContextFlag offset: +0x%X\n", (DWORD64)&context32.ContextFlags - (DWORD64)&context32);
     printf(" * Eip offset: +0x%X\n",         (DWORD64)&context32.Eip - (DWORD64)&context32);
     printf("\n\n");
+#endif
 }
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+    printf("ver: %X\n", fasm_GetVersion());
+
+    BYTE buf[0x1000];
+    char* src = "use32\n pop eax\n mov ecx, eax";
+    fasm_Assemble(src, buf, 0x1000, 0x100, 0);
+
+    FasmState* state = reinterpret_cast<FasmState*>(buf);
+    printf("Size: %i\n", state->output_length);
+    for (int i = 0; i < state->output_length; ++i)
+    {
+        printf("0x%2X ", state->output_data[i]);
+    }
+    printf("\n");
+
+
     PrintContextFieldInfo();
 
     unsigned char remoteCallEntryBase[256] =
