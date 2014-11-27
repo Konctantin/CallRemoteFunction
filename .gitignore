@@ -18,3 +18,4 @@
 *.pdb
 *.obj
 x64/*
+!FASM.OBJ
