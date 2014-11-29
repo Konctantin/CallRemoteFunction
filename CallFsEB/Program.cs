@@ -22,22 +22,40 @@ namespace CallFsEB
 
         public static void Clear()
         {
-            form.tbConsole.Clear();
+            Action f = () => form.tbConsole.Clear();
+            if (form.tbConsole.InvokeRequired)
+                form.tbConsole.BeginInvoke(f);
+            else
+                f();
         }
+
+
 
         public static void WriteLine()
         {
-            form.tbConsole.AppendText("\r\n");
+            Action<string> f = (s) => form.tbConsole.AppendText(s);
+            if (form.tbConsole.InvokeRequired)
+                form.tbConsole.BeginInvoke(f, "\r\n");
+            else
+                f("\r\n");
         }
 
         public static void WriteLine(string str)
         {
-            form.tbConsole.AppendText(str + "\r\n");
+            Action<string> f = (s) => form.tbConsole.AppendText(s);
+            if (form.tbConsole.InvokeRequired)
+                form.tbConsole.BeginInvoke(f, str + "\r\n");
+            else
+                f(str + "\r\n");
         }
 
         public static void WriteLine(string format, params object[] args)
         {
-            form.tbConsole.AppendText(string.Format(format + "\r\n", args));
+            Action<string> f = (s) => form.tbConsole.AppendText(s);
+            if (form.tbConsole.InvokeRequired)
+                form.tbConsole.BeginInvoke(f, string.Format(format + "\r\n", args));
+            else
+                f(string.Format(format + "\r\n", args));
         }
     }
 }

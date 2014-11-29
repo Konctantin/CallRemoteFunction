@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CallFsEB
@@ -16,6 +17,8 @@ namespace CallFsEB
 
         const int offset_def7 = 0x1230; // 7 args
         const int offset_def3 = 0x11D0; // 3 args
+
+        int counter = 0;
 
         delegate long Run();
 
@@ -111,17 +114,20 @@ namespace CallFsEB
                 var path = memory.WriteCString(tbParam2.Text);
                 var alloc = memory.Alloc(0x1000);
 
+                Console.WriteLine("Inject #{0}", ++counter);
                 Console.WriteLine("Build: " + build);
                 Console.WriteLine("Code [alloc]: 0x{0:X16}", alloc);
+                Console.WriteLine("path [alloc]: 0x{0:X16}", path);
+                Console.WriteLine("src  [alloc]: 0x{0:X16}", src);
                 Console.WriteLine("Func address [no rebase]: 0x{0:X16}", func);
                 Console.WriteLine("Base addr: 0x{0:X16}", memory.Process.MainModule.BaseAddress.ToInt64());
 
                 memory.Call(alloc, memory.Rebase(func), src.ToInt64(), path.ToInt64(), 0);
 
                 // не освобождаем дескрипторы, необходимо для отладки процесса.
-                //memory.Free(src);
-                //memory.Free(path);
-                //memory.Free(alloc);
+                memory.Free(src);
+                memory.Free(path);
+                memory.Free(alloc);
             }
             catch (Exception ex)
             {
@@ -129,31 +135,23 @@ namespace CallFsEB
             }
         }
 
-        private void bHardInject_Click(object sender, EventArgs e)
+        private void bTestRip_Click(object sender, EventArgs e)
         {
             if (cbProcess.SelectedIndex == -1) return;
             Console.Clear();
-
             try
             {
                 var process = ((ProcessEntry)cbProcess.SelectedItem).Process;
                 var memory = new ProcessMemory(process);
 
-                var build = process.MainModule.FileVersionInfo.FilePrivatePart;
-                var func = build == 0 ? offset_def3 : this.FuncOffset;
-
-                var alloc = memory.Alloc(0x1000);
-
-                Console.WriteLine("Build: " + build);
-                Console.WriteLine("Code [alloc]: 0x{0:X16}", alloc);
-                Console.WriteLine("Func address [no rebase]: 0x{0:X16}", func);
-                Console.WriteLine("Base addr: 0x{0:X16}", memory.Process.MainModule.BaseAddress.ToInt64());
-
-
-                memory.CallFrameScriptExec(alloc, memory.Rebase(func), tbParam1.Text);
-
-                // не освобождаем дескрипторы, необходимо для отладки процесса.
-                //memory.Free(alloc);
+                Task.Factory.StartNew(new Action(() => {
+                    for (int i = 0; i < 1000; ++i)
+                    {
+                        var context = memory.GetContext();
+                        Console.WriteLine("Rip #{0:000} = 0x{1:X16}", i, context.Rip);
+                        System.Threading.Thread.Sleep(15);
+                    }
+                }));
             }
             catch (Exception ex)
             {

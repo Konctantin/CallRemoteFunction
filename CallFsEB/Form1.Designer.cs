@@ -34,13 +34,13 @@
             this.tbConsole = new System.Windows.Forms.TextBox();
             this.bRefresh = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.tbParam2 = new System.Windows.Forms.TextBox();
-            this.bFlexInject = new System.Windows.Forms.Button();
-            this.tbParam1 = new System.Windows.Forms.TextBox();
-            this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.tbParam1 = new System.Windows.Forms.TextBox();
+            this.bFlexInject = new System.Windows.Forms.Button();
+            this.tbParam2 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.bHardInject = new System.Windows.Forms.Button();
+            this.bTestRip = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -96,7 +96,7 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.bHardInject);
+            this.groupBox1.Controls.Add(this.bTestRip);
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.tbParam1);
@@ -108,13 +108,32 @@
             this.groupBox1.TabIndex = 11;
             this.groupBox1.TabStop = false;
             // 
-            // tbParam2
+            // label5
             // 
-            this.tbParam2.Location = new System.Drawing.Point(58, 45);
-            this.tbParam2.Name = "tbParam2";
-            this.tbParam2.Size = new System.Drawing.Size(263, 20);
-            this.tbParam2.TabIndex = 3;
-            this.tbParam2.Text = "profile.lua";
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(6, 48);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(46, 13);
+            this.label5.TabIndex = 7;
+            this.label5.Text = "Param2:";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(6, 22);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(46, 13);
+            this.label4.TabIndex = 6;
+            this.label4.Text = "Param1:";
+            // 
+            // tbParam1
+            // 
+            this.tbParam1.Location = new System.Drawing.Point(58, 19);
+            this.tbParam1.Name = "tbParam1";
+            this.tbParam1.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.tbParam1.Size = new System.Drawing.Size(263, 20);
+            this.tbParam1.TabIndex = 5;
+            this.tbParam1.Text = "print(\"Hello wow!\");";
             // 
             // bFlexInject
             // 
@@ -126,32 +145,13 @@
             this.bFlexInject.UseVisualStyleBackColor = true;
             this.bFlexInject.Click += new System.EventHandler(this.bInject_Click);
             // 
-            // tbParam1
+            // tbParam2
             // 
-            this.tbParam1.Location = new System.Drawing.Point(58, 19);
-            this.tbParam1.Name = "tbParam1";
-            this.tbParam1.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.tbParam1.Size = new System.Drawing.Size(263, 20);
-            this.tbParam1.TabIndex = 5;
-            this.tbParam1.Text = "print(\"Hello wow!\");";
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(6, 22);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(46, 13);
-            this.label4.TabIndex = 6;
-            this.label4.Text = "Param1:";
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(6, 48);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(46, 13);
-            this.label5.TabIndex = 7;
-            this.label5.Text = "Param2:";
+            this.tbParam2.Location = new System.Drawing.Point(58, 45);
+            this.tbParam2.Name = "tbParam2";
+            this.tbParam2.Size = new System.Drawing.Size(263, 20);
+            this.tbParam2.TabIndex = 3;
+            this.tbParam2.Text = "profile.lua";
             // 
             // label1
             // 
@@ -162,15 +162,15 @@
             this.label1.TabIndex = 12;
             this.label1.Text = "Func address:";
             // 
-            // bHardInject
+            // bTestRip
             // 
-            this.bHardInject.Location = new System.Drawing.Point(9, 100);
-            this.bHardInject.Name = "bHardInject";
-            this.bHardInject.Size = new System.Drawing.Size(312, 23);
-            this.bHardInject.TabIndex = 8;
-            this.bHardInject.Text = "Hard Inject";
-            this.bHardInject.UseVisualStyleBackColor = true;
-            this.bHardInject.Click += new System.EventHandler(this.bHardInject_Click);
+            this.bTestRip.Location = new System.Drawing.Point(9, 100);
+            this.bTestRip.Name = "bTestRip";
+            this.bTestRip.Size = new System.Drawing.Size(75, 23);
+            this.bTestRip.TabIndex = 8;
+            this.bTestRip.Text = "Test Rip";
+            this.bTestRip.UseVisualStyleBackColor = true;
+            this.bTestRip.Click += new System.EventHandler(this.bTestRip_Click);
             // 
             // Form1
             // 
@@ -202,13 +202,13 @@
         public System.Windows.Forms.TextBox tbConsole;
         private System.Windows.Forms.Button bRefresh;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.Button bHardInject;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox tbParam1;
         private System.Windows.Forms.Button bFlexInject;
         private System.Windows.Forms.TextBox tbParam2;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button bTestRip;
     }
 }
 
