@@ -471,6 +471,14 @@ namespace CallFsEB
              пока что нету возможности проверить... :(
              продолжение следует.
 
+             mov   rax, [rsp+8]
+             mov   rbx, FFFFFFFFh
+             cmp   rax, rbx
+             jb    l_ret
+             retn
+            l_ret:
+             retfq
+
             if (context->Rip <= 0x7FFFFFFFUL)
             {
                 // retn
