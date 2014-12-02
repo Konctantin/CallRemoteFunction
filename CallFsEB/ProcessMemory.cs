@@ -21,7 +21,7 @@ namespace CallFsEB
             0x40, 0x51, // push rcx
             0x40, 0x52, // push rdx
             0x40, 0x53, // push rbx
-            0x40, 0x54, // push rsp <>
+            //0x40, 0x54, // push rsp <>
             0x40, 0x55, // push rbp
             0x40, 0x56, // push rsi
             0x40, 0x57, // push rdi
@@ -48,7 +48,7 @@ namespace CallFsEB
             0x40, 0x5F, // pop rdi
             0x40, 0x5E, // pop rsi
             0x40, 0x5D, // pop rbp
-            0x40, 0x5C, // pop rsp <>
+            //0x40, 0x5C, // pop rsp <>
             0x40, 0x5B, // pop rbx
             0x40, 0x5A, // pop rdx
             0x40, 0x59, // pop rcx
