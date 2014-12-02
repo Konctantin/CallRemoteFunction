@@ -34,13 +34,13 @@
             this.tbConsole = new System.Windows.Forms.TextBox();
             this.bRefresh = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.bTestRip = new System.Windows.Forms.Button();
             this.label5 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.tbParam1 = new System.Windows.Forms.TextBox();
             this.bFlexInject = new System.Windows.Forms.Button();
             this.tbParam2 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.bTestRip = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -108,6 +108,16 @@
             this.groupBox1.TabIndex = 11;
             this.groupBox1.TabStop = false;
             // 
+            // bTestRip
+            // 
+            this.bTestRip.Location = new System.Drawing.Point(9, 100);
+            this.bTestRip.Name = "bTestRip";
+            this.bTestRip.Size = new System.Drawing.Size(75, 23);
+            this.bTestRip.TabIndex = 8;
+            this.bTestRip.Text = "Test Rip";
+            this.bTestRip.UseVisualStyleBackColor = true;
+            this.bTestRip.Click += new System.EventHandler(this.bTestRip_Click);
+            // 
             // label5
             // 
             this.label5.AutoSize = true;
@@ -133,7 +143,7 @@
             this.tbParam1.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.tbParam1.Size = new System.Drawing.Size(263, 20);
             this.tbParam1.TabIndex = 5;
-            this.tbParam1.Text = "print(\"Hello wow!\");";
+            this.tbParam1.Text = "print(\"Hello wow! #{0}\");";
             // 
             // bFlexInject
             // 
@@ -161,16 +171,6 @@
             this.label1.Size = new System.Drawing.Size(74, 13);
             this.label1.TabIndex = 12;
             this.label1.Text = "Func address:";
-            // 
-            // bTestRip
-            // 
-            this.bTestRip.Location = new System.Drawing.Point(9, 100);
-            this.bTestRip.Name = "bTestRip";
-            this.bTestRip.Size = new System.Drawing.Size(75, 23);
-            this.bTestRip.TabIndex = 8;
-            this.bTestRip.Text = "Test Rip";
-            this.bTestRip.UseVisualStyleBackColor = true;
-            this.bTestRip.Click += new System.EventHandler(this.bTestRip_Click);
             // 
             // Form1
             // 

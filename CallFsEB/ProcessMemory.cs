@@ -21,7 +21,7 @@ namespace CallFsEB
             0x40, 0x51, // push rcx
             0x40, 0x52, // push rdx
             0x40, 0x53, // push rbx
-            0x40, 0x54, // push rsp <>
+            //0x40, 0x54, // push rsp <>
             0x40, 0x55, // push rbp
             0x40, 0x56, // push rsi
             0x40, 0x57, // push rdi
@@ -48,7 +48,7 @@ namespace CallFsEB
             0x40, 0x5F, // pop rdi
             0x40, 0x5E, // pop rsi
             0x40, 0x5D, // pop rbp
-            0x40, 0x5C, // pop rsp <>
+            //0x40, 0x5C, // pop rsp <>
             0x40, 0x5B, // pop rbx
             0x40, 0x5A, // pop rdx
             0x40, 0x59, // pop rcx
@@ -368,6 +368,8 @@ namespace CallFsEB
                 // mov rcx, funcArgs[0]
                 bytes.AddRange(new byte[] { 0x48, 0xB9 });
                 bytes.AddRange(BitConverter.GetBytes(funcArgs[0]));
+                // lea rcx, [rcx]
+                bytes.AddRange(new byte[] { 0x48, 0x8D, 0x09 });
             }
 
             if (funcArgs.Length > 1)
@@ -375,6 +377,8 @@ namespace CallFsEB
                 // mov rdx, funcArgs[1]
                 bytes.AddRange(new byte[] { 0x48, 0xBA });
                 bytes.AddRange(BitConverter.GetBytes(funcArgs[1]));
+                // lea rdx, [rdx]
+                bytes.AddRange(new byte[] { 0x48, 0x8D, 0x12 });
             }
 
             if (funcArgs.Length > 2)
@@ -382,6 +386,8 @@ namespace CallFsEB
                 // mov r8, funcArgs[2]
                 bytes.AddRange(new byte[] { 0x49, 0xB8 });
                 bytes.AddRange(BitConverter.GetBytes(funcArgs[2]));
+                // lea r8, [r8]
+                bytes.AddRange(new byte[] { 0x4D, 0x8D, 0x00 });
             }
 
             if (funcArgs.Length > 3)
@@ -389,6 +395,8 @@ namespace CallFsEB
                 // mov r9, funcArgs[3]
                 bytes.AddRange(new byte[] { 0x49, 0xB9 });
                 bytes.AddRange(BitConverter.GetBytes(funcArgs[3]));
+                // lea r9, [r9]
+                bytes.AddRange(new byte[] { 0x4D, 0x8D, 0x09 });
             }
 
             // other arguments on the stack
@@ -398,8 +406,9 @@ namespace CallFsEB
                 // mov rax, param
                 bytes.AddRange(new byte[] { 0x48, 0xB8 });
                 bytes.AddRange(BitConverter.GetBytes(funcArgs[i]));
-
-                // mov qword ptr [rsp+i], rax
+                // lea rax, [rax]
+                bytes.AddRange(new byte[] { 0x48, 0x8D, 0x00 });
+                // mov qword ptr [rsp+i*8], rax
                 bytes.AddRange(new byte[] { 0x48, 0x89, 0x44, 0x24, displacement });
 
                 //
@@ -430,8 +439,6 @@ namespace CallFsEB
 
             #region push rip
 
-            Console.WriteLine("Rip: 0x{0:X16}", context->Rip);
-
             var lorip = (uint)((context->Rip >> 00) & 0xFFFFFFFF);
             var hirip = (uint)((context->Rip >> 32) & 0xFFFFFFFF);
 
@@ -445,7 +452,35 @@ namespace CallFsEB
 
             #endregion
 
-            if (context->Rip <= 0xFFFFFFFFUL)
+            #warning Осталось решить проблему длинного релока
+
+            Console.WriteLine("Old Rip:   0x{0:X16}", context->Rip);
+            Console.WriteLine("New Rip:   0x{0:X16}", injAddress.ToInt64());
+            Console.WriteLine("Rip reloc: 0x{0:X16} ({1})",
+                Math.Max(injAddress.ToInt64(), (long)context->Rip) -
+                Math.Min(injAddress.ToInt64(), (long)context->Rip),
+                (long)context->Rip - injAddress.ToInt64()
+                );
+
+            bytes.Add(0xC3);
+
+            /*
+             На данный момент у меня падения происходят ~ 1:20
+             -------------------------------------------------
+             надо либо явно указывать длинный релок: retfq
+             либо в стек заганять эффективный адресс
+             пока что нету возможности проверить... :(
+             продолжение следует.
+
+             mov   rax, [rsp+8]
+             mov   rbx, FFFFFFFFh
+             cmp   rax, rbx
+             jb    l_ret
+             retn
+            l_ret:
+             retfq
+
+            if (context->Rip <= 0x7FFFFFFFUL)
             {
                 // retn
                 bytes.Add(0xC3);
@@ -453,9 +488,10 @@ namespace CallFsEB
             else
             {
                 // retfq
-                bytes.AddRange(new byte[] { 0x48, 0xCE /*0xCB*/ });
+                bytes.Add(0x48);
+                bytes.Add(0xCB);
             }
-
+            */
             #endregion
 
             // Save original code and disable protect
@@ -602,6 +638,12 @@ namespace CallFsEB
         /// </summary>
         [FieldOffset(0x30)]
         public uint ContextFlags;
+
+        // [FieldOffset(0x30)]
+        // public ulong Rax;
+
+        // [FieldOffset(0x30)]
+        // public ulong Rbx;
 
         /// <summary>
         /// Next instruction pointer.
