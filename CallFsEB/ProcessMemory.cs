@@ -456,9 +456,10 @@ namespace CallFsEB
 
             Console.WriteLine("Old Rip:   0x{0:X16}", context->Rip);
             Console.WriteLine("New Rip:   0x{0:X16}", injAddress.ToInt64());
-            Console.WriteLine("Rip reloc: 0x{0:X16}",
+            Console.WriteLine("Rip reloc: 0x{0:X16} ({1})",
                 Math.Max(injAddress.ToInt64(), (long)context->Rip) -
-                Math.Min(injAddress.ToInt64(), (long)context->Rip)
+                Math.Min(injAddress.ToInt64(), (long)context->Rip),
+                (long)context->Rip - injAddress.ToInt64()
                 );
 
             bytes.Add(0xC3);
@@ -637,6 +638,12 @@ namespace CallFsEB
         /// </summary>
         [FieldOffset(0x30)]
         public uint ContextFlags;
+
+        // [FieldOffset(0x30)]
+        // public ulong Rax;
+
+        // [FieldOffset(0x30)]
+        // public ulong Rbx;
 
         /// <summary>
         /// Next instruction pointer.

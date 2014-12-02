@@ -104,17 +104,18 @@ namespace CallFsEB
 
             try
             {
+                ++counter;
                 var process = ((ProcessEntry)cbProcess.SelectedItem).Process;
                 var memory = new ProcessMemory(process);
 
                 var build = process.MainModule.FileVersionInfo.FilePrivatePart;
                 var func = build == 0 ? offset_def3 : this.FuncOffset;
 
-                var src = memory.WriteCString(tbParam1.Text);
-                var path = memory.WriteCString(tbParam2.Text);
+                var src = memory.WriteCString(string.Format(tbParam1.Text, counter));
+                var path = memory.WriteCString(tbParam2.Text + " " + counter);
                 var alloc = memory.Alloc(0x1000);
 
-                Console.WriteLine("Inject #{0}", ++counter);
+                Console.WriteLine("Inject #{0}", counter);
                 Console.WriteLine("Build: " + build);
                 Console.WriteLine("Code [alloc]: 0x{0:X16}", alloc);
                 Console.WriteLine("path [alloc]: 0x{0:X16}", path);
