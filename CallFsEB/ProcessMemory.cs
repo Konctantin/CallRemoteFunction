@@ -462,6 +462,7 @@ namespace CallFsEB
                 (long)context->Rip - injAddress.ToInt64()
                 );
 
+            // retn
             bytes.Add(0xC3);
 
             /*
@@ -501,7 +502,7 @@ namespace CallFsEB
             if (!VirtualProtectEx(this.Process.Handle, injAddress, bytes.Count, MemoryProtection.ExecuteReadWrite, out oldProtect))
                 throw new Win32Exception();
 
-            Debug.WriteLine("Shell code size: {0}", bytes.Count);
+            Console.WriteLine("Byte code size: {0}", bytes.Count);
             
             // write shell code
             this.Write(injAddress, bytes.ToArray());
