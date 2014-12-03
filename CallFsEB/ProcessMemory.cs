@@ -421,6 +421,9 @@ namespace CallFsEB
             bytes.AddRange(new byte[] { 0x48, 0xB8 });
             bytes.AddRange(BitConverter.GetBytes(funcAddress.ToInt64()));
 
+            // lea rax, rax
+            bytes.AddRange(new byte[] { 0x48, 0x8D, 0x00 });
+
             // call rax
             bytes.AddRange(new byte[] { 0xFF, 0xD0 });
 
