@@ -173,7 +173,7 @@
             this.Controls.Add(this.cbProcess);
             this.Controls.Add(this.tbFuncAddress);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "Test wow function caller";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

@@ -1,87 +1,72 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace CallFsEB
 {
     public partial class Form1 : Form
     {
-        const int offset_def7 = 0x1230; // 7 args
-        const int offset_def3 = 0x3D0A0; // 3 args
-
-        int counter = 0;
-
-        private long FuncOffset
-        {
-            get { return long.Parse(tbFuncAddress.Text.Substring(2), NumberStyles.AllowHexSpecifier); }
-        }
+        // build 20490
+        private Dictionary<string, long> addr_list = new Dictionary<string, long> {
+            ["wow"]     = 0, // todo
+            ["wow-64"]  = 0x3D0A0,
+            ["wowfake"] = 0, // todo
+        };
 
         class ProcessEntry
         {
             public Process Process;
+            public long address;
             public string Name
             {
-                get { return string.Format("[{0}] {1}", Process.Id, Process.ProcessName); }
+                get { return $"[{Process.Id}] {Process.ProcessName} func: 0x{address:X}"; }
             }
         }
 
         public Form1()
         {
             InitializeComponent();
-
-            tbFuncAddress.Text = "0x003D0A0"; // FrameScript::ExecuteBuffer
-            Text = "Test injection \"sizeof(void*) = " + IntPtr.Size + "\"";
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            System.Threading.Thread.Sleep(1000);
             cbProcess.Items.Clear();
-
-            foreach (var process in Process.GetProcessesByName("wow-64")
-                .Concat(Process.GetProcessesByName("wow")))
+            foreach (var process in Process.GetProcesses())
             {
-                cbProcess.Items.Add(new ProcessEntry { Process = process });
-            }
-
-            if (cbProcess.Items.Count > 0)
-            {
-                cbProcess.SelectedIndex = 0;
-            }
-            else
-            {
-                foreach (var process in Process.GetProcesses())
+                var name = process.ProcessName?.ToLower();
+                if (addr_list.ContainsKey(name))
                 {
-                    cbProcess.Items.Add(new ProcessEntry { Process = process });
+                    var addr = addr_list[name];
+                    cbProcess.Items.Add(new ProcessEntry { Process = process, address = addr });
                 }
             }
 
-            Console.WriteLine("sizeof(CONTEXT) = " + Marshal.SizeOf(typeof(CONTEXT)));
+            if (cbProcess.Items.Count > 0)
+                cbProcess.SelectedIndex = 0;
         }
 
+        int counter = 0;
         private void bInject_Click(object sender, EventArgs e)
         {
-            if (cbProcess.SelectedIndex == -1) return;
+            if (cbProcess.SelectedIndex == -1)
+                return;
             Console.Clear();
 
             try
             {
                 ++counter;
-                var process = ((ProcessEntry)cbProcess.SelectedItem).Process;
-                var memory = new ProcessMemory(process);
+                var processEntry = ((ProcessEntry)cbProcess.SelectedItem);
+                if (processEntry.address == 0L)
+                    throw new Exception("Don't supported!");
 
-                var build = process.MainModule.FileVersionInfo.FilePrivatePart;
-                var func = build == 0 ? offset_def3 : FuncOffset;
-
-                var src = memory.WriteCString(string.Format(tbParam1.Text, counter));
-                var path = memory.WriteCString(tbParam2.Text + " " + counter);
-                var alloc = memory.Alloc(0x1000);
+                var memory = new ProcessMemory(processEntry.Process);
+                var src    = memory.WriteCString(string.Format(tbParam1.Text, counter));
+                var path   = memory.WriteCString(tbParam2.Text + " " + counter);
+                var alloc  = memory.Alloc(0x1000);
 
                 Console.WriteLine("Inject #{0}", counter);
-                memory.Call(alloc, memory.Rebase(func), src.ToInt64(), path.ToInt64(), 0);
+                memory.Call(alloc, memory.Rebase(processEntry.address), src.ToInt64(), path.ToInt64(), 0);
 
                 // не освобождаем дескрипторы, необходимо для отладки процесса.
                 //memory.Free(src);
