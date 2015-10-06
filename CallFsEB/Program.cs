@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace CallFsEB
 {
     public static class Console
     {
+        public static List<byte> Add(this List<byte> list, params byte[] args)
+        {
+            list.AddRange(args);
+            return list;
+        }
+
         static Form1 form;
         /// <summary>
         /// Главная точка входа для приложения.
@@ -20,6 +24,10 @@ namespace CallFsEB
             Application.Run(form = new Form1());
         }
 
+        static void InternalWrite(string text)
+        {
+        }
+
         public static void Clear()
         {
             Action f = () => form.tbConsole.Clear();
@@ -28,8 +36,6 @@ namespace CallFsEB
             else
                 f();
         }
-
-
 
         public static void WriteLine()
         {
