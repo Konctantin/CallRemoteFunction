@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace TestGetContext
@@ -21,6 +22,7 @@ namespace TestGetContext
 
         static unsafe void Main(string[] args)
         {
+            var s = "AsFesgRT".Count(n => char.IsLower(n));
             Console.Title = "CONTEXT Sixe = " + Marshal.SizeOf(typeof(CONTEXT)); 
 
             Console.Write("Plese enter the thread Id: ");

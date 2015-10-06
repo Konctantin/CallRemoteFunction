@@ -10,18 +10,16 @@ namespace CallFsEB
 {
     public class ProcessMemory
     {
-        #region Asm Stuff
+        #region Asm save/restore flags and registers
 
         private byte[] pushafq = {
-            // save flags
-            0x9C,       // pushfq
-
             // save registers
             0x40, 0x50, // push rax
+            0x40, 0x54, // push rsp << 1
+            0x40, 0x54, // push rsp << 2
             0x40, 0x51, // push rcx
             0x40, 0x52, // push rdx
             0x40, 0x53, // push rbx
-            0x40, 0x54, // push rsp
             0x40, 0x55, // push rbp
             0x40, 0x56, // push rsi
             0x40, 0x57, // push rdi
@@ -33,9 +31,14 @@ namespace CallFsEB
             0x41, 0x55, // push r13
             0x41, 0x56, // push r14
             0x41, 0x57, // push r15
+
+            0x9C,       // pushfq
         };
 
         private byte[] popafq = {
+            // restore flags
+            0x9D,       // popfq
+
             // restore registers
             0x41, 0x5F, // pop r15
             0x41, 0x5E, // pop r14
@@ -48,14 +51,12 @@ namespace CallFsEB
             0x40, 0x5F, // pop rdi
             0x40, 0x5E, // pop rsi
             0x40, 0x5D, // pop rbp
-            0x40, 0x5C, // pop rsp
             0x40, 0x5B, // pop rbx
             0x40, 0x5A, // pop rdx
             0x40, 0x59, // pop rcx
+            0x40, 0x5C, // pop rsp >> 2
+            0x40, 0x5C, // pop rsp >> 1
             0x40, 0x58, // pop rax
-
-            // restore flags
-            0x9D,       // popfq
         };
 
         #endregion
@@ -63,17 +64,19 @@ namespace CallFsEB
         #region API
 
         [DllImport("kernel32", SetLastError = true, ExactSpelling = true)]
-        static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, AllocationType flAllocationType, MemoryProtection flProtect);
+        public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, AllocationType flAllocationType, MemoryProtection flProtect);
         [DllImport("kernel32", SetLastError = true)]
         public static extern IntPtr OpenThread(ThreadAccess DesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, int dwThreadId);
         [DllImport("kernel32", SetLastError = true, ExactSpelling = true)]
-        static extern bool VirtualFreeEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, FreeType dwFreeType);
+        public static extern bool VirtualFreeEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, FreeType dwFreeType);
         [DllImport("kernel32", SetLastError = true)]
-        static extern bool VirtualProtectEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, MemoryProtection flNewProtect, out MemoryProtection lpflOldProtect);
+        public static extern bool VirtualProtectEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, MemoryProtection flNewProtect, out MemoryProtection lpflOldProtect);
         [DllImport("kernel32", SetLastError = true)]
-        private static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int nSize, IntPtr lpNumberOfBytesWritten);
+        public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int nSize, IntPtr lpNumberOfBytesWritten);
         [DllImport("kernel32", SetLastError = true)]
-        private static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesRead);
+        public static unsafe extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, void* lpBuffer, int nSize, IntPtr lpNumberOfBytesWritten);
+        [DllImport("kernel32", SetLastError = true)]
+        public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesRead);
         [DllImport("kernel32", SetLastError = true)]
         public static extern uint SuspendThread(IntPtr thandle);
         [DllImport("kernel32", SetLastError = true)]
@@ -83,19 +86,19 @@ namespace CallFsEB
         [DllImport("kernel32", SetLastError = true)]
         public static unsafe extern bool SetThreadContext(IntPtr thandle, CONTEXT* context);
         [DllImport("user32", SetLastError = true)]
-        static extern IntPtr GetForegroundWindow();
+        public static extern IntPtr GetForegroundWindow();
 
         [DllImport("kernel32", SetLastError = true)]
-        static extern bool FlushInstructionCache(IntPtr hProcess, IntPtr lpBaseAddress, IntPtr dwSize);
+        public static extern bool FlushInstructionCache(IntPtr hProcess, IntPtr lpBaseAddress, IntPtr dwSize);
 
         [DllImport("ntdll.dll", SetLastError = true)]
-        static extern IntPtr NtSuspendProcess(IntPtr ProcessHandle);
+        public static extern IntPtr NtSuspendProcess(IntPtr ProcessHandle);
         [DllImport("ntdll.dll", SetLastError = true)]
-        static extern IntPtr NtResumeProcess(IntPtr ProcessHandle);
+        public static extern IntPtr NtResumeProcess(IntPtr ProcessHandle);
 
         #endregion
 
-        
+
         /// <summary>
         /// Возвращает текущий процесс.
         /// </summary>
@@ -107,7 +110,7 @@ namespace CallFsEB
         /// <param name="process"></param>
         public ProcessMemory(Process process)
         {
-            this.Process = process;
+            Process = process;
         }
 
         /// <summary>
@@ -122,7 +125,7 @@ namespace CallFsEB
             if (size <= 0)
                 throw new ArgumentNullException("size");
 
-            var address = VirtualAllocEx(this.Process.Handle, IntPtr.Zero, size, allocType, memProtect);
+            var address = VirtualAllocEx(Process.Handle, IntPtr.Zero, size, allocType, memProtect);
 
             if (address == IntPtr.Zero)
                 throw new Win32Exception();
@@ -140,7 +143,7 @@ namespace CallFsEB
             if (address == IntPtr.Zero)
                 throw new ArgumentNullException("address");
 
-            if (!VirtualFreeEx(this.Process.Handle, address, 0, freeType))
+            if (!VirtualFreeEx(Process.Handle, address, 0, freeType))
                 throw new Win32Exception();
         }
 
@@ -153,7 +156,7 @@ namespace CallFsEB
         public unsafe byte[] ReadBytes(IntPtr address, int count)
         {
             var bytes = new byte[count];
-            if(!ReadProcessMemory(this.Process.Handle, address, bytes, count, IntPtr.Zero))
+            if(!ReadProcessMemory(Process.Handle, address, bytes, count, IntPtr.Zero))
                 throw new Win32Exception();
             return bytes;
         }
@@ -167,7 +170,7 @@ namespace CallFsEB
         public unsafe T Read<T>(IntPtr address) where T : struct
         {
             var result = new byte[Marshal.SizeOf(typeof(T))];
-            ReadProcessMemory(this.Process.Handle, address, result, result.Length, IntPtr.Zero);
+            ReadProcessMemory(Process.Handle, address, result, result.Length, IntPtr.Zero);
             var handle = GCHandle.Alloc(result, GCHandleType.Pinned);
             T returnObject = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
             handle.Free();
@@ -183,7 +186,7 @@ namespace CallFsEB
         public string ReadString(IntPtr addess, int length = 100)
         {
             var result = new byte[length];
-            if (!ReadProcessMemory(this.Process.Handle, addess, result, length, IntPtr.Zero))
+            if (!ReadProcessMemory(Process.Handle, addess, result, length, IntPtr.Zero))
                 throw new Win32Exception();
             return Encoding.UTF8.GetString(result.TakeWhile(ret => ret != 0).ToArray());
         }
@@ -205,7 +208,7 @@ namespace CallFsEB
             {
                 Marshal.StructureToPtr(value, hObj, false);
                 Marshal.Copy(hObj, buffer, 0, buffer.Length);
-                if (!WriteProcessMemory(this.Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
+                if (!WriteProcessMemory(Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
                     throw new Win32Exception();
             }
             catch
@@ -234,7 +237,7 @@ namespace CallFsEB
             {
                 Marshal.StructureToPtr(value, hObj, false);
                 Marshal.Copy(hObj, buffer, 0, buffer.Length);
-                if (!WriteProcessMemory(this.Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
+                if (!WriteProcessMemory(Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
                     throw new Win32Exception();
             }
             finally
@@ -250,10 +253,10 @@ namespace CallFsEB
         /// <returns>Указатель на участок памяти куда записан массив.</returns>
         public IntPtr Write(byte[] buffer)
         {
-            var addr = this.Alloc(buffer.Length);
+            var addr = Alloc(buffer.Length);
             if (addr == IntPtr.Zero)
                 throw new Win32Exception();
-            this.Write(addr, buffer);
+            Write(addr, buffer);
             return addr;
         }
 
@@ -264,8 +267,22 @@ namespace CallFsEB
         /// <param name="buffer">Массив байт.</param>
         public void Write(IntPtr address, byte[] buffer)
         {
-            if (!WriteProcessMemory(this.Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
+            if (!WriteProcessMemory(Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
                 throw new Win32Exception();
+        }
+
+        public IntPtr WriteArray<T>(T[] array) where T : struct, IConvertible
+        {
+            var elementSize = Marshal.SizeOf(typeof(T));
+            var arraySize = array.Length * elementSize;
+            var ptr = Alloc(arraySize, AllocationType.Reserve | AllocationType.Commit);
+
+            for (int offset = 0, i = 0; offset < arraySize; offset += elementSize, ++i)
+            {
+                Write<T>(IntPtr.Add(ptr, offset), array[i]);
+            }
+
+            return ptr;
         }
 
         /// <summary>
@@ -276,7 +293,7 @@ namespace CallFsEB
         public void WriteCString(IntPtr address, string str)
         {
             var buffer = Encoding.UTF8.GetBytes(str + '\0');
-            if (!WriteProcessMemory(this.Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
+            if (!WriteProcessMemory(Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
                 throw new Win32Exception();
         }
 
@@ -289,33 +306,9 @@ namespace CallFsEB
         {
             var buffer = Encoding.UTF8.GetBytes(str + '\0');
             var address = Alloc(buffer.Length);
-            if (!WriteProcessMemory(this.Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
+            if (!WriteProcessMemory(Process.Handle, address, buffer, buffer.Length, IntPtr.Zero))
                 throw new Win32Exception();
             return address;
-        }
-
-        public unsafe CONTEXT GetContext(uint contextFlag = 0x100001u)
-        {
-            var tHandle = OpenThread(ThreadAccess.All, false, this.Process.Threads[0].Id);
-            if (NtSuspendProcess(this.Process.Handle) != IntPtr.Zero)
-                throw new Win32Exception();
-
-            // don't use new CONTEXT
-            // because __declspec(align(16)) _CONTEXT
-            var context = (CONTEXT*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CONTEXT)));
-            context->ContextFlags = contextFlag; // CONTEXT_CONTROL
-
-            if (!GetThreadContext(tHandle, context))
-                throw new Win32Exception();
-
-            if (NtResumeProcess(this.Process.Handle) != IntPtr.Zero)
-                throw new Win32Exception();
-
-            var rcont = new CONTEXT { ContextFlags = context->ContextFlags, Rip = context->Rip };
-
-            Marshal.FreeHGlobal((IntPtr)context);
-
-            return rcont;
         }
 
         /// <summary>
@@ -328,37 +321,41 @@ namespace CallFsEB
         /// </param>
         public unsafe void Call(IntPtr injAddress, IntPtr funcAddress, params long[] funcArgs)
         {
-            var tHandle = OpenThread(ThreadAccess.All, false, this.Process.Threads[0].Id);
+            var threadId = Process.Threads[0].Id;
+            var tHandle = OpenThread(ThreadAccess.All, false, threadId);
 
             //if (SuspendThread(tHandle) == 0xFFFFFFFF)
             //    throw new Win32Exception();
 
-            if (NtSuspendProcess(this.Process.Handle) != IntPtr.Zero)
-                throw new Win32Exception();
-
             // don't use new CONTEXT
             // because __declspec(align(16)) _CONTEXT
             var context = (CONTEXT*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CONTEXT)));
-            context->ContextFlags = 0x100001u; // CONTEXT_CONTROL
+            //context->ContextFlags = 0x100001u; // CONTEXT_CONTROL
+            context->ContextFlags = 0x10001F; // CONTEXT_ALL
+
+            if (NtSuspendProcess(Process.Handle) != IntPtr.Zero)
+                throw new Win32Exception();
 
             if (!GetThreadContext(tHandle, context))
                 throw new Win32Exception();
 
-            var checkAddr = this.Write<uint>(0);
+            var checkAddr = Write<uint>(0);
             var bytes = new List<byte>();
 
             #region ASM
 
-            byte minStackSize = 0x20;
-            var reservStack  = (byte)Math.Max(funcArgs.Length * IntPtr.Size, minStackSize);
+            byte minStackSize = 0x60;
+            byte reservStack  = (byte)Math.Max(funcArgs.Length * IntPtr.Size, minStackSize);
 
             // save flags and registers
             bytes.AddRange(pushafq);
 
-            // code
+            // align stack ???? mabe
+            // and rsp, not 0x10
+            bytes.Add(0x48, 0x83, 0xE4, 0xEF);
 
             // sub rsp, reservStack
-            bytes.AddRange(new byte[] { 0x48, 0x83, 0xEC, reservStack });
+            bytes.Add(0x48, 0x83, 0xEC, reservStack);
 
             #region Function arguments
 
@@ -440,74 +437,28 @@ namespace CallFsEB
             //restore registers and flags
             bytes.AddRange(popafq);
 
-            #region push rip
+            // jump to original address
+            // jmp [rsp]
+            bytes.AddRange(new byte[]{ 0xFF, 0x24, 0x24 });
+            // orig: dq rip
+            bytes.AddRange(BitConverter.GetBytes(context->Rip));
 
-            var lorip = (uint)((context->Rip >> 00) & 0xFFFFFFFF);
-            var hirip = (uint)((context->Rip >> 32) & 0xFFFFFFFF);
-
-            // push to stack next instruction address
-            bytes.Add(0x68); // push lo
-            bytes.AddRange(BitConverter.GetBytes(lorip));
-            
-            // mov [rsp+4], hi
-            bytes.AddRange(new byte[] { 0xC7, 0x44, 0x24, 0x04 });
-            bytes.AddRange(BitConverter.GetBytes(hirip));
-
-            #endregion
-
-            #warning Осталось решить проблему длинного релока
-
-            Console.WriteLine("Old Rip:   0x{0:X16}", context->Rip);
-            Console.WriteLine("New Rip:   0x{0:X16}", injAddress.ToInt64());
-            Console.WriteLine("Rip reloc: 0x{0:X16} ({1})",
-                Math.Max(injAddress.ToInt64(), (long)context->Rip) -
-                Math.Min(injAddress.ToInt64(), (long)context->Rip),
-                (long)context->Rip - injAddress.ToInt64()
-                );
-
+            // retn
             bytes.Add(0xC3);
 
-            /*
-             На данный момент у меня падения происходят ~ 1:20
-             -------------------------------------------------
-             надо либо явно указывать длинный релок: retfq
-             либо в стек заганять эффективный адресс
-             пока что нету возможности проверить... :(
-             продолжение следует.
-
-             mov   rax, [rsp+8]
-             mov   rbx, FFFFFFFFh
-             cmp   rax, rbx
-             jb    l_ret
-             retn
-            l_ret:
-             retfq
-
-            if (context->Rip <= 0x7FFFFFFFUL)
-            {
-                // retn
-                bytes.Add(0xC3);
-            }
-            else
-            {
-                // retfq
-                bytes.Add(0x48);
-                bytes.Add(0xCB);
-            }
-            */
             #endregion
 
             // Save original code and disable protect
-            var oldCode = this.ReadBytes(injAddress, bytes.Count);
+            var oldCode = ReadBytes(injAddress, bytes.Count);
 
             var oldProtect = MemoryProtection.ReadOnly;
-            if (!VirtualProtectEx(this.Process.Handle, injAddress, bytes.Count, MemoryProtection.ExecuteReadWrite, out oldProtect))
+            if (!VirtualProtectEx(Process.Handle, injAddress, bytes.Count, MemoryProtection.ExecuteReadWrite, out oldProtect))
                 throw new Win32Exception();
 
             Debug.WriteLine("Shell code size: {0}", bytes.Count);
-            
+
             // write shell code
-            this.Write(injAddress, bytes.ToArray());
+            Write(injAddress, bytes.ToArray());
 
             // set next instruction pointer
             context->Rip = (ulong)injAddress.ToInt64();
@@ -515,7 +466,7 @@ namespace CallFsEB
             if (!SetThreadContext(tHandle, context))
                 throw new Win32Exception();
 
-            if (NtResumeProcess(this.Process.Handle) != IntPtr.Zero)
+            if (NtResumeProcess(Process.Handle) != IntPtr.Zero)
                 throw new Win32Exception();
 
             //if (ResumeThread(tHandle) == 0xFFFFFFFF)
@@ -524,7 +475,7 @@ namespace CallFsEB
             for (int i = 0; i < 0x100; ++i)
             {
                 System.Threading.Thread.Sleep(15);
-                if (this.Read<uint>(checkAddr) == 0xDEADBEEF)
+                if (Read<uint>(checkAddr) == 0xDEADBEEF)
                 {
                     Debug.WriteLine("iter: " + i);
                     break;
@@ -532,17 +483,21 @@ namespace CallFsEB
             }
 
             Marshal.FreeHGlobal((IntPtr)context);
-            this.Free(checkAddr);
+            Free(checkAddr);
 
             // original code
-            this.Write(injAddress, oldCode);
+            Write(injAddress, oldCode);
 
-            if (!FlushInstructionCache(this.Process.Handle, injAddress, (IntPtr)oldCode.Length))
+            if (!FlushInstructionCache(Process.Handle, injAddress, (IntPtr)oldCode.Length))
                 throw new Win32Exception();
 
             // restore protection
-            if (!VirtualProtectEx(this.Process.Handle, injAddress, bytes.Count, oldProtect, out oldProtect))
+            if (!VirtualProtectEx(Process.Handle, injAddress, bytes.Count, oldProtect, out oldProtect))
                 throw new Win32Exception();
+        }
+
+        public void Call_x32(int injAddress, int funcAddress, params int[] funcArgs)
+        {
         }
 
         /// <summary>
@@ -552,7 +507,7 @@ namespace CallFsEB
         /// <returns>абсолютный аддресс в процессе.</returns>
         public IntPtr Rebase(long offset)
         {
-            return new IntPtr(offset + this.Process.MainModule.BaseAddress.ToInt64());
+            return new IntPtr(offset + Process.MainModule.BaseAddress.ToInt64());
         }
 
         /// <summary>
@@ -560,7 +515,7 @@ namespace CallFsEB
         /// </summary>
         public bool IsFocusWindow
         {
-            get { return this.Process.MainWindowHandle == GetForegroundWindow(); }
+            get { return Process.MainWindowHandle == GetForegroundWindow(); }
         }
     }
 
@@ -642,12 +597,6 @@ namespace CallFsEB
         [FieldOffset(0x30)]
         public uint ContextFlags;
 
-        // [FieldOffset(0x30)]
-        // public ulong Rax;
-
-        // [FieldOffset(0x30)]
-        // public ulong Rbx;
-
         /// <summary>
         /// Next instruction pointer.
         /// </summary>
@@ -672,6 +621,7 @@ namespace CallFsEB
         /// </summary>
         [FieldOffset(0xB8)]
         public uint Eip;
+
     };
 
     #endregion

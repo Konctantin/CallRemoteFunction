@@ -4,6 +4,9 @@
 #include <setjmp.h>
 #include <string>
 
+//#include <ntstatus.h>
+//#include <ntdef.h>
+
 //#pragma comment(lib, "FASM")
 
 #define OFFSET(f) printf(" * "#f" offset: +0x%X\n", (DWORD64)&(context.#f) - (DWORD64)&context)
@@ -48,6 +51,10 @@ void PrintContextFieldInfo()
     printf("Info of structure 'CONTEXT' for x64 mode\n");
     printf(" * Size: %i\n", sizeof(CONTEXT));
 
+    BOOLEAN b;
+
+    //RTL_PAGED_CODE();
+
     /*
     Info of structure 'CONTEXT' for x64 mode
      * Size: 1232
@@ -89,7 +96,7 @@ void PrintContextFieldInfo()
      * R14 offset: +0xE8
      * R15 offset: +0xF0
     */
-
+    offsetof(CONTEXT, P1Home);
     printf(" * P1Home offset: +0x%X\n", (DWORD64)&(context.P1Home) - (DWORD64)&context);
     printf(" * P2Home offset: +0x%X\n", (DWORD64)&(context.P2Home) - (DWORD64)&context);
     printf(" * P3Home offset: +0x%X\n", (DWORD64)&(context.P3Home) - (DWORD64)&context);
@@ -119,14 +126,15 @@ void PrintContextFieldInfo()
     printf(" * Rbp offset: +0x%X\n", (DWORD64)&(context.Rbp) - (DWORD64)&context);
     printf(" * Rsi offset: +0x%X\n", (DWORD64)&(context.Rsi) - (DWORD64)&context);
     printf(" * Rdi offset: +0x%X\n", (DWORD64)&(context.Rdi) - (DWORD64)&context);
-    printf(" * R8 offset: +0x%X\n", (DWORD64)&(context.R8) - (DWORD64)&context);
-    printf(" * R9 offset: +0x%X\n", (DWORD64)&(context.R9) - (DWORD64)&context);
+    printf(" * R8  offset: +0x%X\n", (DWORD64)&(context.R8)  - (DWORD64)&context);
+    printf(" * R9  offset: +0x%X\n", (DWORD64)&(context.R9)  - (DWORD64)&context);
     printf(" * R10 offset: +0x%X\n", (DWORD64)&(context.R10) - (DWORD64)&context);
     printf(" * R11 offset: +0x%X\n", (DWORD64)&(context.R11) - (DWORD64)&context);
     printf(" * R12 offset: +0x%X\n", (DWORD64)&(context.R12) - (DWORD64)&context);
     printf(" * R13 offset: +0x%X\n", (DWORD64)&(context.R13) - (DWORD64)&context);
     printf(" * R14 offset: +0x%X\n", (DWORD64)&(context.R14) - (DWORD64)&context);
     printf(" * R15 offset: +0x%X\n", (DWORD64)&(context.R15) - (DWORD64)&context);
+    printf(" * R15 offset: +0x%X\n", (DWORD64)&(context.Rip) - (DWORD64)&context);
 
     printf("\n\n");
 
@@ -148,6 +156,10 @@ int _tmain(int argc, _TCHAR* argv[])
     //    printf("0x%2X ", state->output_data[i]);
     //}
     //printf("\n");
+
+    printf("sizeof(M128A) = %i\n", sizeof(M128A));
+    printf("sizeof(XMM_SAVE_AREA32) = %i\n", sizeof(XMM_SAVE_AREA32));
+    //printf("CONTEXT_ALL = 0x%X\n", CONTEXT_ALL, EFLAGS_);
 
 
     PrintContextFieldInfo();
