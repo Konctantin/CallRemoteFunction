@@ -5,6 +5,7 @@
 [R|r]elease/*
 */bin/*
 */obj/*
+.vs/*
 [O|o]bj/*
 *.orig
 *.rej
@@ -17,5 +18,7 @@
 *.idb
 *.pdb
 *.obj
+*.ipch
+*.[Vv][Cc].db
 x64/*
 !FASM.OBJ
