@@ -10,7 +10,7 @@ namespace CallFsEB
         // build 20490
         private Dictionary<string, long> addr_list = new Dictionary<string, long> {
             ["wow"]     = 0, // todo
-            ["wow-64"]  = 0x3D0A0,
+            ["wow-64"]  = 0xD26F0,
             ["wowfake"] = 0, // todo
         };
 
@@ -39,6 +39,7 @@ namespace CallFsEB
                 {
                     var addr = addr_list[name];
                     cbProcess.Items.Add(new ProcessEntry { Process = process, address = addr });
+                    tbFuncAddress.Text = $"{addr}";
                 }
             }
 
@@ -63,7 +64,7 @@ namespace CallFsEB
                 var memory = new ProcessMemory(processEntry.Process);
                 var src    = memory.WriteCString(string.Format(tbParam1.Text, counter));
                 var path   = memory.WriteCString(tbParam2.Text + " " + counter);
-                var alloc  = memory.Alloc(0x1000);
+                var alloc  = memory.Alloc(0x4000);
 
                 Console.WriteLine("Inject #{0}", counter);
                 memory.Call(alloc, memory.Rebase(processEntry.address), src.ToInt64(), path.ToInt64(), 0);
